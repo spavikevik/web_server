@@ -1,8 +1,8 @@
 require 'socket'
 require 'json'
-require 'erb'
 
 Methods = {'GET' => :get_method, 'POST' => :post_method}
+
 def generate_header(status, content_length=0)
   <<-RESP_HEADER
 HTTP/1.1 #{status}\r
@@ -42,7 +42,7 @@ def create_response(path, method)
     content = send(method, path)
     status = "200 OK"
   rescue
-    content = ""
+    content = "<h1>404 NOT FOUND</h1>"
     status = "404 Not Found"
   end
   generate_header(status, content.length) + content

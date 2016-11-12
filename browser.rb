@@ -1,17 +1,36 @@
 require 'socket'
 require 'json'
 
-host = 'localhost'
-port = 8080
-path = '/index.html'
+def open_socket
+  host = 'localhost'
+  port = 8080
 
-post_data = { :viking => { :name=>"Erik the Red", :email=>"erikthered@theodinproject.com" } }.to_json
-header = "POST #{path} HTTP/1.0\r\nContent-Length: #{post_data.length}\r\n\r\n"
+  TCPSocket.open(host, port)
+end
 
-socket = TCPSocket.open(host, port)
-socket.print (header + post_data)
+def post_request(socket)
+  post_data = { :viking => { :name=>"Erik the Red", :email=>"erikthered@theodinproject.com" } }.to_json
+  header = "POST /thanks.html HTTP/1.1\r\nContent-Length: #{post_data.length}\r\n\r\n"
+  socket.print (header + post_data)
+end
 
-response = socket.read
+def get_request(socket, path)
+  header = "GET #{path} HTTP/1.1\r\n\r\n"
+  socket.print header
+end
 
-headers, body = response.split("\r\n\r\n", 2)
-print response
+def print_response(socket)
+  response = socket.read
+  headers, body = response.split("\r\n\r\n", 2)
+  response
+end
+
+puts "Requesting 'index.html'..."
+socket = open_socket
+get_request socket, '/index.html'
+puts print_response socket
+
+puts "\nPosting data to 'thanks.html'..."
+socket = open_socket
+post_request socket
+puts print_response socket
