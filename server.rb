@@ -34,7 +34,7 @@ def post_method(path)
 end
 
 def params
-  JSON.parse $post_data
+  JSON.parse Thread.current['post_data']
 end
 
 def create_response(path, method)
@@ -50,19 +50,20 @@ end
 
 server = TCPServer.open(8080)
 loop do
-  client = server.accept
-  i = 0
-  while line = client.gets and line !~ /^\s*$/
-    if i == 0
-      header = line
+  Thread.start(server.accept) do |client|
+    i = 0
+    while line = client.gets and line !~ /^\s*$/
+      if i == 0
+        header = line
+      end
+      i += 1
+      if line =~ /Content-Length:\s*([\d]+)/
+        content_length = $1.to_i
+      end
     end
-    i += 1
-    if line =~ /Content-Length:\s*([\d]+)/
-      content_length = $1.to_i
-    end
+    header =~ /([A-Z]+)[ ]\/(.+)[ ]([A-Z]+\/\d\.\d)[\r\n][\r\n]/
+    Thread.current['post_data'] = client.readpartial(content_length) if $1 == 'POST'
+    client.print create_response($2.to_s, Methods[$1])
+    client.close
   end
-  header =~ /([A-Z]+)[ ]\/(.+)[ ]([A-Z]+\/\d\.\d)[\r\n][\r\n]/
-  $post_data = client.readpartial(content_length) if $1 == 'POST'
-  client.print create_response($2.to_s, Methods[$1])
-  client.close
 end
